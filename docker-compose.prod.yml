@@ -1,0 +1,106 @@
+# docker-compose.prod.yml
+# For a production-like environment. Builds and runs all services.
+# Assumes a Dockerfile exists in each service's root directory.
+# Command: make up-prod
+version: '3.8'
+
+services:
+  # --- Infrastructure Services ---
+  postgres-user-db:
+    image: postgres:15
+    container_name: postgres-user-db
+    environment:
+      - POSTGRES_USER=fm_user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=fm_user_service_db
+    volumes:
+      - postgres-user-data:/var/lib/postgresql/data
+    networks:
+      - freelancer-market-net
+
+  postgres-project-db:
+    image: postgres:15
+    container_name: postgres-project-db
+    environment:
+      - POSTGRES_USER=fm_user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=fm_project_service_db
+    volumes:
+      - postgres-project-data:/var/lib/postgresql/data
+    networks:
+      - freelancer-market-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    networks:
+      - freelancer-market-net
+
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: rabbitmq
+    ports:
+      - "15672:15672" # Expose management UI for debugging if needed
+    networks:
+      - freelancer-market-net
+
+  # --- Application Services ---
+  fm-user-service:
+    build:
+      context: ./fm-user-service
+    container_name: fm-user-service
+    depends_on:
+      - postgres-user-db
+      - redis
+    environment:
+      # These would be overridden with production values
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-user-db:5432/fm_user_service_db
+      - SPRING_REDIS_HOST=redis
+    networks:
+      - freelancer-market-net
+
+  fm-project-service:
+    build:
+      context: ./fm-project-service
+    container_name: fm-project-service
+    depends_on:
+      - postgres-project-db
+      - redis
+      - rabbitmq
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-project-db:5432/fm_project_service_db
+      - SPRING_REDIS_HOST=redis
+      - SPRING_RABBITMQ_HOST=rabbitmq
+    networks:
+      - freelancer-market-net
+
+  fm-notification-service:
+    build:
+      context: ./fm-notification-service
+    container_name: fm-notification-service
+    depends_on:
+      - rabbitmq
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+    networks:
+      - freelancer-market-net
+
+  fm-gateway-service:
+    build:
+      context: ./fm-gateway-service
+    container_name: fm-gateway-service
+    ports:
+      - "8080:8080" # The single entry point for the entire application
+    depends_on:
+      - fm-user-service
+      - fm-project-service
+    networks:
+      - freelancer-market-net
+
+volumes:
+  postgres-user-data:
+  postgres-project-data:
+
+networks:
+  freelancer-market-net:
+    driver: bridge

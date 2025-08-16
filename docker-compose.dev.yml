@@ -1,0 +1,65 @@
+# docker-compose.dev.yml
+# For local development. Starts only infrastructure services.
+# Run your Spring Boot apps from your IDE.
+# Command: make up-dev
+version: '3.8'
+
+services:
+  # PostgreSQL database for the User Service
+  postgres-user-db:
+    image: postgres:15
+    container_name: postgres-user-db
+    ports:
+      - "5432:5432" # Exposes the DB on the host machine for local connection
+    environment:
+      - POSTGRES_USER=fm_user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=fm_user_service_db
+    volumes:
+      - postgres-user-data:/var/lib/postgresql/data
+    networks:
+      - freelancer-market-net
+
+  # PostgreSQL database for the Project Service
+  postgres-project-db:
+    image: postgres:15
+    container_name: postgres-project-db
+    ports:
+      - "5433:5432" # Use a different host port to avoid conflict
+    environment:
+      - POSTGRES_USER=fm_user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=fm_project_service_db
+    volumes:
+      - postgres-project-data:/var/lib/postgresql/data
+    networks:
+      - freelancer-market-net
+
+  # Redis instance for caching
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - freelancer-market-net
+
+  # RabbitMQ for the notification system
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672" # AMQP port
+      - "15672:15672" # Management UI
+    networks:
+      - freelancer-market-net
+
+# Define named volumes for data persistence
+volumes:
+  postgres-user-data:
+  postgres-project-data:
+
+# Define a shared network for all services
+networks:
+  freelancer-market-net:
+    driver: bridge

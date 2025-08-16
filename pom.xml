@@ -12,7 +12,11 @@
     <artifactId>fm-hub</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>fm-hub</name>
-    <description>fm-hub</description>
+    <description>Parent project for the Freelancer Market microservices</description>
+
+    <!-- This project is a parent POM, not a JAR/WAR file -->
+    <packaging>pom</packaging>
+
     <url/>
     <licenses>
         <license/>
@@ -28,7 +32,38 @@
     </scm>
     <properties>
         <java.version>21</java.version>
+        <!-- Use a Spring Cloud version compatible with your Spring Boot version -->
+        <spring-cloud.version>2023.0.0</spring-cloud.version>
     </properties>
+
+    <!-- List all the sub-projects (modules) that are part of this build -->
+    <modules>
+        <module>fm-user-service</module>
+        <module>fm-project-service</module>
+        <module>fm-notification-service</module>
+        <module>fm-gateway-service</module>
+        <module>fm-shared-lib</module>
+    </modules>
+
+    <!--
+    Dependency Management section:
+    This section defines the versions of dependencies that child modules CAN use.
+    It does not add the dependencies to the modules automatically.
+    This is the central place to manage versions for the entire application.
+-->
+    <dependencyManagement>
+        <dependencies>
+            <!-- Import the Spring Cloud Bill of Materials (BOM) -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>

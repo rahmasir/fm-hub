@@ -1,0 +1,15 @@
+[submodule "fm-user-service"]
+	path = fm-user-service
+	url = https://github.com/rahmasir/fm-user-service.git
+[submodule "fm-gateway-service"]
+	path = fm-gateway-service
+	url = https://github.com/rahmasir/fm-gateway-service.git
+[submodule "fm-notification-service"]
+	path = fm-notification-service
+	url = https://github.com/rahmasir/fm-notification-service.git
+[submodule "fm-project-service"]
+	path = fm-project-service
+	url = https://github.com/rahmasir/fm-project-service.git
+[submodule "fm-shared-lib"]
+	path = fm-shared-lib
+	url = https://github.com/rahmasir/fm-shared-lib.git

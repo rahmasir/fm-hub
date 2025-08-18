@@ -1,0 +1,54 @@
+# docker-compose.user-only.yml
+# A temporary, standalone environment for running ONLY the fm-user-service and its dependencies.
+# This is useful for isolated testing and development of the user service.
+# Command: make up-user-only
+version: '3.8'
+
+services:
+  # --- Infrastructure Services for User Service ---
+  postgres-user-db:
+    image: postgres:15
+    container_name: postgres-user-db-standalone
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=fm_user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=fm_user_service_db
+    volumes:
+      - postgres-user-data:/var/lib/postgresql/data
+    networks:
+      - freelancer-market-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-standalone
+    ports:
+      - "6379:6379"
+    networks:
+      - freelancer-market-net
+
+  # --- Application Service ---
+  fm-user-service:
+    build:
+      context: . # Build from the root context
+      dockerfile: ./fm-user-service/Dockerfile # Specify the Dockerfile location
+    container_name: fm-user-service-standalone
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres-user-db
+      - redis
+    environment:
+      # Connect to the infrastructure services within this Docker network
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-user-db:5432/fm_user_service_db
+      - SPRING_REDIS_HOST=redis
+    networks:
+      - freelancer-market-net
+
+volumes:
+  postgres-user-data:
+
+networks:
+  freelancer-market-net:
+    driver: bridge

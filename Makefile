@@ -85,4 +85,17 @@ logs-prod:
 ps:
 	docker ps
 
-.PHONY: build package up-dev down-dev down-dev-v logs-dev db-seed db-clear up-prod down-prod logs-prod ps
+
+# --- Standalone User Service Environment ---
+
+# Builds and starts only the user service and its dependencies.
+up-user-only:
+	@echo "Building and starting standalone user service stack..."
+	docker-compose -f docker-compose.user-only.yml up --build -d
+
+# Stops the standalone user service stack.
+down-user-only:
+	@echo "Stopping standalone user service stack..."
+	docker-compose -f docker-compose.user-only.yml down -v
+
+.PHONY: build package up-dev down-dev down-dev-v logs-dev db-seed db-clear up-prod down-prod logs-prod ps up-user-only down-user-only

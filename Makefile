@@ -1,44 +1,88 @@
-# Makefile for managing Docker Compose environments
+# Cross-platform Makefile for managing Docker Compose and Maven builds
+
+# Detect OS
+ifeq ($(OS),Windows_NT)
+	SHELL := cmd.exe
+	MVN := mvnw.cmd
+	DOCKER_COMPOSE := docker-compose
+else
+	SHELL := /bin/bash
+	MVN := ./mvnw
+	DOCKER_COMPOSE := docker-compose
+endif
+
+
+# --- Maven Commands ---
+
+# Cleans all modules and installs them into the local Maven repository.
+build:
+	@echo "Building all modules..."
+	$(MVN) clean install
+
+# Cleans and packages all modules into JAR files.
+package:
+	@echo "Packaging all modules..."
+	$(MVN) clean package
+
 
 # --- Development Environment ---
 
-# Starts the development infrastructure (Postgres, Redis, RabbitMQ) in detached mode
+# Starts the development infrastructure (Postgres, Redis, RabbitMQ).
 up-dev:
 	@echo "Starting development infrastructure..."
-	docker-compose -f docker-compose.dev.yml up -d
+	$(DOCKER_COMPOSE) -f docker-compose.dev.yml up -d
 
-# Stops and removes the development infrastructure containers and network
+# Stops the development infrastructure.
 down-dev:
 	@echo "Stopping development infrastructure..."
-	docker-compose -f docker-compose.dev.yml down
+	$(DOCKER_COMPOSE) -f docker-compose.dev.yml down
 
-# Shows the logs for the development infrastructure
+# Stops the development infrastructure AND removes persistent data volumes.
+down-dev-v:
+	@echo "Stopping development infrastructure and removing volumes..."
+	$(DOCKER_COMPOSE) -f docker-compose.dev.yml down -v
+
+# Shows the logs for the development infrastructure.
 logs-dev:
 	@echo "Showing development infrastructure logs..."
-	docker-compose -f docker-compose.dev.yml logs -f
+	$(DOCKER_COMPOSE) -f docker-compose.dev.yml logs -f
+
+
+# --- Database Commands (for Development Environment) ---
+
+# Seeds the user-service database with initial data.
+db-seed:
+	@echo "Seeding the user-service database..."
+	$(DOCKER_COMPOSE) -f docker-compose.dev.yml exec -T postgres-user-db psql -U fm_user -d fm_user_service_db < ./scripts/seed.sql
+
+# Truncates all tables in the user-service database.
+db-clear:
+	@echo "Clearing all data from user-service database tables..."
+	$(DOCKER_COMPOSE) -f docker-compose.dev.yml exec -T postgres-user-db psql -U fm_user -d fm_user_service_db -c "TRUNCATE TABLE skill, freelancer_profile, employer_profile, app_user CASCADE;"
+
 
 # --- Production Environment ---
 
-# Builds and starts the entire application stack in detached mode
+# Builds and starts the entire application stack.
 up-prod:
 	@echo "Building and starting production stack..."
-	docker-compose -f docker-compose.prod.yml up --build -d
+	$(DOCKER_COMPOSE) -f docker-compose.prod.yml up --build -d
 
-# Stops and removes all production containers, networks, and volumes
+# Stops and removes all production containers, networks, and volumes.
 down-prod:
 	@echo "Stopping production stack..."
-	docker-compose -f docker-compose.prod.yml down -v
+	$(DOCKER_COMPOSE) -f docker-compose.prod.yml down -v
 
-# Shows the logs for all production services
+# Shows the logs for all production services.
 logs-prod:
 	@echo "Showing production stack logs..."
-	docker-compose -f docker-compose.prod.yml logs -f
+	$(DOCKER_COMPOSE) -f docker-compose.prod.yml logs -f
+
 
 # --- General Commands ---
 
-# Lists all running Docker containers
+# Lists all running Docker containers.
 ps:
 	docker ps
 
-.PHONY: up-dev down-dev logs-dev up-prod down-prod logs-prod ps
-
+.PHONY: build package up-dev down-dev down-dev-v logs-dev db-seed db-clear up-prod down-prod logs-prod ps
